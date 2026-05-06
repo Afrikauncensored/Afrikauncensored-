@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Full Article - AFRICA UNCENSORED</title>
+
+<style>
+body {
+    font-family: Arial;
+    background: #f4f4f4;
+    margin: 0;
+    padding: 20px;
+}
+
+/* ARTICLE CONTAINER */
+.article {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 800px;
+    margin: auto;
+}
+
+/* IMAGE */
+.article img {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+    margin-bottom: 15px;
+}
+
+/* TITLE */
+.article h1 {
+    margin-bottom: 10px;
+}
+
+/* BACK BUTTON */
+.back-btn {
+    background: black;
+    color: white;
+    padding: 8px 12px;
+    border: none;
+    margin-bottom: 15px;
+    cursor: pointer;
+}
+
+/* COMMENT SECTION */
+.comment-box {
+    margin-top: 30px;
+}
+
+input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+button {
+    background: red;
+    color: white;
+    padding: 10px;
+    border: none;
+    margin-top: 10px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: black;
+}
+
+/* COMMENTS */
+#comments p {
+    background: #eee;
+    padding: 8px;
+    border-radius: 5px;
+    margin-top: 5px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="article" id="article">
+    <h2>Loading article...</h2>
+</div>
+
+<!-- FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+<script>
+// FIREBASE CONFIG
+const firebaseConfig = {
+  apiKey: "AIzaSyCXyPkqXp-oRwat9hqDf4soOOfUX6K2NRA",
+  authDomain: "africa-uncensored-ce663.firebaseapp.com",
+  projectId: "africa-uncensored-ce663",
+  storageBucket: "africa-uncensored-ce663.firebasestorage.app",
+  messagingSenderId: "517087626869",
+  appId: "1:517087626869:web:63bfec9fa1ad6deba75a3c"
+};
+
+// INIT
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// GET ARTICLE ID
+const id = localStorage.getItem("articleId");
+
+// CHECK IF ID EXISTS
+if (!id) {
+    document.getElementById("article").innerHTML =
+        "<h2>❌ No article selected. Go back and click a news post.</h2>";
+    throw new Error("No article ID found");
+}
+
+// LOAD ARTICLE
+db.collection("news").doc(id).get()
+.then(doc => {
+    if (!doc.exists) {
+        document.getElementById("article").innerHTML =
+            "<h2>❌ Article not found</h2>";
+        return;
+    }
+
+    const data = doc.data();
+
+    document.getElementById("article").innerHTML = `
+        <button class="back-btn" onclick="goBack()">⬅ Back</button>
+
+        <img src="${data.image}">
+        <h1>${data.title}</h1>
+        <p>${data.content}</p>
+
+        <div class="comment-box">
+            <h3>Comments</h3>
+            <input type="text" id="comment" placeholder="Write a comment">
+            <button onclick="addComment()">Post Comment</button>
+        </div>
+
+        <div id="comments"></div>
+    `;
+
+    loadComments();
+})
+.catch(error => {
+    document.getElementById("article").innerHTML =
+        "<h2>❌ Error loading article</h2>";
+    console.log(error);
+});
+
+// BACK FUNCTION
+function goBack(){
+    window.location.href = "index.html";
+}
+
+// ADD COMMENT
+function addComment(){
+    const text = document.getElementById("comment").value;
+
+    if (text.trim() === "") {
+        alert("Write something first!");
+        return;
+    }
+
+    db.collection("news").doc(id).collection("comments").add({
+        text: text,
+        time: new Date()
+    });
+
+    document.getElementById("comment").value = "";
+}
+
+// LOAD COMMENTS REAL-TIME
+function loadComments(){
+    db.collection("news").doc(id).collection("comments")
+    .orderBy("time", "desc")
+    .onSnapshot(snapshot => {
+        let html = "";
+
+        snapshot.forEach(doc => {
+            html += `<p>💬 ${doc.data().text}</p>`;
+        });
+
+        document.getElementById("comments").innerHTML = html;
+    });
+}
+</script>
+
+</body>
+</html>
